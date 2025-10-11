@@ -8,10 +8,10 @@
 <body>
     <h3>Code Tracker Assessment</h3>
     <div class="tabs">
-    <button class="tabs" id="showDashboard">Dashboard</button>
-    <button class="tabs" id="showLogs">Logs</button>
-    <button class="tabs" id="clearData"> Clear</button>
-    <button class="tabs" id="exportLogs">Export</button>
+    <button id="showDashboard">Dashboard</button>
+    <button id="showLogs">Logs</button>
+    <button id="clearData"> Clear</button>
+    <button id="exportLogs">Export</button>
     </div>
     <div id="dashboard">
       <div class="start-grid">
@@ -51,8 +51,19 @@
         <option value="all">All Problems</option>
       </select>
     </div>
-
+    <!-- Export Logs Options -->
+     <div class="export-options" id="exportOptions" style="display:none;">
+      <select class="export-select" id="exportFilter">
+        <option value="none">Choose format...</option>
+        <option value="xlsx">Excel (.xlsx)</option>
+        <option value="csv">CSV (.csv)</option>
+        <option value="pdf">PDF (.pdf)</option>
+      </select>
+     </div>
+    <!-- log List -->
     <ul id="logList"></ul>
+    <script src="xlsx.full.min.js"></script>
+    <script src="jspdf.umd.min.js"></script>
     <script src="popup.js"></script>
 
 </body>
@@ -298,6 +309,27 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #0ff;
   }
+  /* Export Opions */
+  .export-options{
+    display:flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    justify-content: center;
+  }
+  .export-select{
+    background: #222;
+    color: #0f0;
+    border: 1px solid #0f0;
+    padding: 8px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 8px;
+    cursor: pointer;
+    min-width: 200px;
+  }
+  .export-select:hover {
+    background: #0f0;
+    color: #222;
+}
 </style>
 <script src="xlsx.full.min.js"></script>
 </html>

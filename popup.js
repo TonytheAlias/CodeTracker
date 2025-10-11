@@ -239,15 +239,16 @@ function populateFilters(logs){
       problemFilter.appendChild(option);
   });
 }
-function filterLogs(logs) {
-    const eventTypeFilter = document.getElementById('eventTypeFilter').value;
-    const problemFilter = document.getElementById('problemFilter').value;
 
-    return logs.filter(log => {
-        const matchesEventType = eventTypeFilter === 'all' || log.e === eventTypeFilter;
-        const matchesProblem = problemFilter === 'all' || log.problem === problemFilter;
-        return matchesEventType && matchesProblem;
-    });
+function filterLogs(logs) {
+  const eventTypeFilter = document.getElementById('eventTypeFilter').value;
+  const problemFilter = document.getElementById('problemFilter').value;
+
+  return logs.filter(log => {
+    const matchesEventType = eventTypeFilter === 'all' || log.e === eventTypeFilter;
+    const matchesProblem = problemFilter === 'all' || log.problem === problemFilter;
+    return matchesEventType && matchesProblem;
+  });
 }
 
 // Render logs to the list
@@ -386,60 +387,306 @@ document.getElementById("clearData").addEventListener("click", async () => {
     }
 });
 
-// Export Logs
+
 document.getElementById("exportLogs").addEventListener("click", async () => {
-    setLoading("exportLogs", true);
+  const exportOptions = document.getElementById("exportOptions")
 
-    try {
-        if (typeof XLSX === 'undefined') {
-            throw new Error('XLSX library not loaded. Please reload the extension.');
-        }
-
-        const data = await chrome.storage.local.get("logs");
-        const logs = data.logs || [];
-
-        if (logs.length === 0) {
-            alert("No logs to export!");
-            return;
-        }
-
-        // Prepare data for Excel
-        const header = ["Event", "Typing Speed", "Problem", "Timestamp"];
-        const rows = logs.map(log => ([
-            log.e || "",
-            log.typingSpeed !== undefined ? log.typingSpeed : "",
-            log.problem || "",
-            new Date(log.timestamp).toLocaleString()
-        ]));
-
-        const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
-
-        // Auto-size columns
-        const colWidths = [
-            {wch: 20},
-            {wch: 15},
-            {wch: 30},
-            {wch: 25}
-        ];
-        worksheet['!cols'] = colWidths;
-
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
-
-        const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-        const blob = new Blob([wbout], { type: "application/octet-stream" });
-
-        const timestamp = new Date().toISOString().split('T')[0];
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `coding-assessment-logs-${timestamp}.xlsx`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-
-        alert(`Successfully exported ${logs.length} logs!`);
-    } catch (error) {
-        logError('exportLogs', error);
-    } finally {
-        setLoading("exportLogs", false);
-    }
+  if (exportOptions.style.display === "flex"){
+    exportOptions.style.display = "none";
+  }
+  else{
+    exportOptions.style.display = "flex";
+  }
 });
+document.getElementById('exportFilter').addEventListener('change', async (e) => {
+  const format = e.target.value;
+
+  if (format === 'none') return;
+
+  const dropdown = e.target;
+  dropdown.disabled = true;
+
+  try{
+    const data = await chrome.storage.local.get("logs");
+    const logs = data.logs || [];
+
+    if (logs.length === 0){
+      alert("No logs to export");
+      return
+    }
+
+    switch(format){
+      case 'xlsx':
+        await exportXLSX(logs);
+        break;
+      case 'csv':
+        await exportCSV(logs);
+        break;
+      case 'pdf':
+        await exportPDF(logs);
+        break;
+      default:
+        alert("Please select a format")
+    } 
+    
+    document.getElementById("exportOptions").style.display = 'none'
+    e.target.value = 'none';
+  }
+  catch (error) {
+    logError('export', error);
+  }
+  finally{
+    dropdown.disabled = false;
+  }
+  
+});
+
+async function exportXLSX(logs) {
+    if (typeof XLSX === 'undefined') {
+        throw new Error('XLSX library not loaded. Please reload the extension.');
+    }
+
+    const header = ["Event", "Typing Speed", "Problem", "Timestamp"];
+    const rows = logs.map(log => ([
+        log.e || "",
+        log.typingSpeed !== undefined ? log.typingSpeed : "",
+        log.problem || "",
+        new Date(log.timestamp).toLocaleString()
+    ]));
+
+    const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
+
+    // Auto-size columns
+    worksheet['!cols'] = [
+        {wch: 20},
+        {wch: 15},
+        {wch: 30},
+        {wch: 25}
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
+
+    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbout], { type: "application/octet-stream" });
+
+    const timestamp = new Date().toISOString().split('T')[0];
+    downloadFile(blob, `coding-assessment-logs-${timestamp}.xlsx`);
+
+    alert(`Successfully exported ${logs.length} logs as XLSX!`);
+}
+
+
+async function exportCSV(logs) {
+    const header = ["Event", "Typing Speed", "Problem", "Timestamp"];
+    
+    // Create CSV content
+    let csvContent = header.join(",") + "\n";
+    
+    logs.forEach(log => {
+        const row = [
+            escapeCSV(log.e || ""),
+            log.typingSpeed !== undefined ? log.typingSpeed : "",
+            escapeCSV(log.problem || ""),
+            escapeCSV(new Date(log.timestamp).toLocaleString())
+        ];
+        csvContent += row.join(",") + "\n";
+    });
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const timestamp = new Date().toISOString().split('T')[0];
+    downloadFile(blob, `coding-assessment-logs-${timestamp}.csv`);
+
+    alert(`Successfully exported ${logs.length} logs as CSV!`);
+}
+
+
+async function exportPDF(logs) {
+    if (typeof window.jspdf === 'undefined') {
+        throw new Error('jsPDF library not loaded. Please reload the extension.');
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Calculate statistics for summary
+    const stats = calculateStats(logs);
+    const alerts = generateAlerts(stats);
+    
+    let yPos = 20;
+    const leftMargin = 15;
+    const pageHeight = doc.internal.pageSize.height;
+    const lineHeight = 7;
+    
+    // Title
+    doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
+    doc.text('Coding Assessment Report', leftMargin, yPos);
+    yPos += 10;
+    
+    // Metadata
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Generated: ${new Date().toLocaleString()}`, leftMargin, yPos);
+    yPos += 6;
+    doc.text(`Total Events: ${logs.length}`, leftMargin, yPos);
+    yPos += 6;
+    
+    if (stats.sessionStart && stats.sessionEnd) {
+        const duration = formatDuration(stats.sessionEnd - stats.sessionStart);
+        doc.text(`Session Duration: ${duration}`, leftMargin, yPos);
+        yPos += 10;
+    } else {
+        yPos += 4;
+    }
+    
+    // Summary Statistics Section
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Summary Statistics', leftMargin, yPos);
+    yPos += 8;
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Tab Switches: ${stats.tabSwitches}`, leftMargin, yPos);
+    yPos += 6;
+    doc.text(`Paste Events: ${stats.pasteEvents}`, leftMargin, yPos);
+    yPos += 6;
+    doc.text(`Idle Periods: ${stats.idleEvents}`, leftMargin, yPos);
+    yPos += 6;
+    doc.text(`Unique Problems: ${stats.problems.size}`, leftMargin, yPos);
+    yPos += 10;
+    
+    // Alerts Section
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Behavioral Alerts', leftMargin, yPos);
+    yPos += 8;
+    
+    doc.setFontSize(10);
+    alerts.forEach(alert => {
+        // Check if we need a new page
+        if (yPos > pageHeight - 20) {
+            doc.addPage();
+            yPos = 20;
+        }
+        
+        // Color code alerts
+        if (alert.type === 'danger') {
+            doc.setTextColor(220, 20, 20);
+            doc.text(`[!] ${alert.message}`, leftMargin, yPos);
+        } else if (alert.type === 'warning') {
+            doc.setTextColor(220, 180, 20);
+            doc.text(`[?] ${alert.message}`, leftMargin, yPos);
+        } else {
+            doc.setTextColor(20, 180, 20);
+            doc.text(`[✓] ${alert.message}`, leftMargin, yPos);
+        }
+        doc.setTextColor(0, 0, 0); // Reset to black
+        yPos += 7;
+    });
+    yPos += 5;
+    
+    // Event Log Section
+    doc.addPage();
+    yPos = 20;
+    
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Detailed Event Log', leftMargin, yPos);
+    yPos += 10;
+    
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    
+    // Table header
+    doc.setFont(undefined, 'bold');
+    doc.text('Event', leftMargin, yPos);
+    doc.text('Problem', leftMargin + 45, yPos);
+    doc.text('Timestamp', leftMargin + 110, yPos);
+    yPos += 5;
+    
+    // Draw line under header
+    doc.line(leftMargin, yPos, 195, yPos);
+    yPos += 5;
+    
+    doc.setFont(undefined, 'normal');
+    
+    // Event rows
+    logs.forEach((log, index) => {
+        // Check if we need a new page
+        if (yPos > pageHeight - 15) {
+            doc.addPage();
+            yPos = 20;
+            
+            // Redraw header on new page
+            doc.setFont(undefined, 'bold');
+            doc.text('Event', leftMargin, yPos);
+            doc.text('Problem', leftMargin + 45, yPos);
+            doc.text('Timestamp', leftMargin + 110, yPos);
+            yPos += 5;
+            doc.line(leftMargin, yPos, 195, yPos);
+            yPos += 5;
+            doc.setFont(undefined, 'normal');
+        }
+        
+        // Truncate long text
+        const eventText = (log.e || "").substring(0, 20);
+        const problemText = (log.problem || "N/A").substring(0, 30);
+        const timeText = new Date(log.timestamp).toLocaleTimeString();
+        
+        // Color code suspicious events
+        if (log.e === 'paste') {
+            doc.setTextColor(220, 20, 20);
+        } else if (log.e === 'tab_switch' || log.e === 'idle_detected') {
+            doc.setTextColor(220, 180, 20);
+        }
+        
+        doc.text(eventText, leftMargin, yPos);
+        doc.text(problemText, leftMargin + 45, yPos);
+        doc.text(timeText, leftMargin + 110, yPos);
+        
+        doc.setTextColor(0, 0, 0); // Reset color
+        yPos += 5;
+    });
+    
+    // Footer on each page
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(
+            `Page ${i} of ${pageCount}`,
+            doc.internal.pageSize.width / 2,
+            pageHeight - 10,
+            { align: 'center' }
+        );
+    }
+    
+    // Save the PDF
+    const timestamp = new Date().toISOString().split('T')[0];
+    doc.save(`coding-assessment-logs-${timestamp}.pdf`);
+    
+    alert(`Successfully exported ${logs.length} logs as PDF!`);
+}
+
+// Helper function to escape CSV special characters
+function escapeCSV(str) {
+    if (typeof str !== 'string') return str;
+    
+    // If string contains comma, quotes, or newlines, wrap in quotes
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+}
+
+// Helper function to trigger download
+function downloadFile(blob, filename) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}

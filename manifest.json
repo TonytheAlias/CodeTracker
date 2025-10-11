@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "AI Cheater Logger Lite",
+  "name": "Code Tracker",
   "version": "1.0",
   "description": "Logs user behavior during coding assessments to detect potential AI-assisted cheating.",
   "permissions": ["storage", "scripting"],
