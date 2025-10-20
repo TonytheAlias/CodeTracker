@@ -182,10 +182,6 @@ function renderDashboard(logs) {
     document.getElementById('chartContainer').classList.add('visible');
 }
 
-// Call this automatically on load for testing
-setTimeout(() => {
-    testDashboardWithSampleData();
-}, 500);
 // Show Dashboard
 document.getElementById("showDashboard").addEventListener("click", async () => {
     if (dashboardVisible) {
