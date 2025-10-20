@@ -325,12 +325,12 @@ document.getElementById("showLogs").addEventListener("click", async () => {
             });
 
             logsVisible = true;
-            button.textContent = "Hide Logs";
             filterSection.style.display = "flex";
         } catch (error) {
             logError('showLogs', error);
         } finally {
             setLoading("showLogs", false);
+            button.textContent = "Hide Logs";
         }
     } else {
         list.classList.remove("showing");
