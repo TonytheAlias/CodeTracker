@@ -1,25 +1,21 @@
-// Constants
-const BATCH_INTERVAL = 2000; // Send events every 2 seconds
-const KEYSTROKE_DEBOUNCE = 500; // Log keystrokes every 500ms
-const IDLE_THRESHOLD = 10000; // 10 seconds of no mouse movement
 
-// Event buffer for batching
+const BATCH_INTERVAL = 2000;
+const KEYSTROKE_DEBOUNCE = 500; 
+const IDLE_THRESHOLD = 10000; 
+
 let eventBuffer = [];
 let batchTimer = null;
 
-// Debounce and tracking variables
 let lastKeyTime = null;
 let keystrokeCount = 0;
 let lastKeystrokeLog = Date.now();
 let isIdle = false;
 let lastMove = Date.now();
 
-// Error logging
 function logError(context, error) {
     console.error(`[Content Script Error - ${context}]:`, error);
 }
 
-// Get problem name from URL
 function getProblemName() {
     try {
         const url = window.location.href;
@@ -47,7 +43,7 @@ function getProblemName() {
     }
 }
 
-// Add event to buffer
+
 function bufferEvent(eventType, data = {}) {
     try {
         const event = {
@@ -59,7 +55,7 @@ function bufferEvent(eventType, data = {}) {
         
         eventBuffer.push(event);
 
-        // Start batch timer if not already running
+        
         if (!batchTimer) {
             batchTimer = setTimeout(flushEventBuffer, BATCH_INTERVAL);
         }
@@ -68,7 +64,7 @@ function bufferEvent(eventType, data = {}) {
     }
 }
 
-// Send buffered events to background script
+
 async function flushEventBuffer() {
     if (eventBuffer.length === 0) {
         batchTimer = null;
@@ -86,25 +82,25 @@ async function flushEventBuffer() {
         });
     } catch (error) {
         logError('flushEventBuffer', error);
-        // Put events back in buffer if send failed
+        
         eventBuffer = [...eventsToSend, ...eventBuffer];
     }
 }
 
-// Debounced keystroke tracking
+
 document.addEventListener("keydown", (e) => {
     try {
         const currentTime = Date.now();
         keystrokeCount++;
 
-        // Calculate typing speed if we have a previous keystroke
+        
         let typingSpeed = null;
         if (lastKeyTime !== null) {
             typingSpeed = currentTime - lastKeyTime;
         }
         lastKeyTime = currentTime;
 
-        // Only log keystroke data every KEYSTROKE_DEBOUNCE milliseconds
+        
         if (currentTime - lastKeystrokeLog >= KEYSTROKE_DEBOUNCE) {
             bufferEvent("keystroke_batch", {
                 count: keystrokeCount,
@@ -120,7 +116,6 @@ document.addEventListener("keydown", (e) => {
     }
 });
 
-// Paste detection
 document.addEventListener("paste", () => {
     try {
         bufferEvent("paste");
@@ -129,7 +124,7 @@ document.addEventListener("paste", () => {
     }
 });
 
-// Tab visibility changes
+
 document.addEventListener("visibilitychange", () => {
     try {
         if (document.hidden) {
@@ -144,12 +139,12 @@ document.addEventListener("visibilitychange", () => {
     }
 });
 
-// Improved idle detection
+
 document.addEventListener('mousemove', () => {
     try {
         const currentTime = Date.now();
         
-        // User was idle and is now active again
+        
         if (isIdle) {
             bufferEvent('active_return', {
                 idleDuration: currentTime - lastMove
@@ -163,13 +158,13 @@ document.addEventListener('mousemove', () => {
     }
 });
 
-// Check for idle state periodically
+
 setInterval(() => {
     try {
         const currentTime = Date.now();
         const timeSinceMove = currentTime - lastMove;
         
-        // User has been idle for threshold duration
+        
         if (!isIdle && timeSinceMove >= IDLE_THRESHOLD) {
             bufferEvent('idle_detected');
             isIdle = true;
@@ -179,10 +174,10 @@ setInterval(() => {
     }
 }, 5000);
 
-// Log session start
+
 bufferEvent('session_start');
 
-// Flush buffer before page unload
+
 window.addEventListener('beforeunload', () => {
     try {
         flushEventBuffer();
