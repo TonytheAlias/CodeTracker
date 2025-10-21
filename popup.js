@@ -109,7 +109,7 @@ function generateAlerts(stats) {
     return alerts;
 }
 
-// Format time duration
+
 function formatDuration(ms) {
     const minutes = Math.floor(ms / 60000);
     if (minutes < 60) return `${minutes}m`;
@@ -118,7 +118,7 @@ function formatDuration(ms) {
     return `${hours}h ${remainingMinutes}m`;
 }
 
-// Render dashboard
+
 function renderDashboard(logs) {
     const stats = calculateStats(logs);
     const alerts = generateAlerts(stats);
@@ -152,7 +152,7 @@ function renderDashboard(logs) {
 
     const eventEntries = Object.entries(stats.eventTypes)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 5); // Top 5 events
+        .slice(0, 5); 
 
     const maxCount = Math.max(...eventEntries.map(e => e[1]));
 
@@ -252,7 +252,7 @@ function filterLogs(logs) {
   });
 }
 
-// Render logs to the list
+
 function renderLogs(logs) {
     const list = document.getElementById("logList");
     list.innerHTML = "";
@@ -265,7 +265,7 @@ function renderLogs(logs) {
         return;
     }
 
-    // Show last 100 logs
+   
     const logsToShow = logs.slice(-100);
 
     logsToShow.forEach(log => {
@@ -274,7 +274,7 @@ function renderLogs(logs) {
         const problem = log.problem ? ` (${log.problem})` : '';
         item.textContent = `${log.e} at ${time}${problem}`;
 
-        // Color code suspicious events
+        
         if (log.e === 'paste') {
             item.classList.add('danger');
         } else if (log.e === 'tab_switch' || log.e === 'idle_detected') {
@@ -313,10 +313,10 @@ document.getElementById("showLogs").addEventListener("click", async () => {
                 item.style.color = "#888";
                 list.appendChild(item);
             } else {
-                // Populate filter dropdowns
+                
                 populateFilters(allLogs);
 
-                // Render logs
+                
                 const filteredLogs = filterLogs(allLogs);
                 renderLogs(filteredLogs);
             }
@@ -344,7 +344,7 @@ document.getElementById("showLogs").addEventListener("click", async () => {
     }
 });
 
-// Event type filter change handler
+
 document.getElementById('eventTypeFilter').addEventListener('change', () => {
     if (logsVisible && allLogs.length > 0) {
         const filteredLogs = filterLogs(allLogs);
@@ -352,7 +352,7 @@ document.getElementById('eventTypeFilter').addEventListener('change', () => {
     }
 });
 
-// Problem filter change handler
+
 document.getElementById('problemFilter').addEventListener('change', () => {
     if (logsVisible && allLogs.length > 0) {
         const filteredLogs = filterLogs(allLogs);
@@ -457,7 +457,7 @@ async function exportXLSX(logs) {
 
     const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
 
-    // Auto-size columns
+    
     worksheet['!cols'] = [
         {wch: 20},
         {wch: 15},
@@ -481,7 +481,7 @@ async function exportXLSX(logs) {
 async function exportCSV(logs) {
     const header = ["Event", "Typing Speed", "Problem", "Timestamp"];
     
-    // Create CSV content
+    
     let csvContent = header.join(",") + "\n";
     
     logs.forEach(log => {
@@ -510,7 +510,7 @@ async function exportPDF(logs) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    // Calculate statistics for summary
+    
     const stats = calculateStats(logs);
     const alerts = generateAlerts(stats);
     
@@ -525,7 +525,7 @@ async function exportPDF(logs) {
     doc.text('Coding Assessment Report', leftMargin, yPos);
     yPos += 10;
     
-    // Metadata
+   
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
     doc.text(`Generated: ${new Date().toLocaleString()}`, leftMargin, yPos);
@@ -541,7 +541,7 @@ async function exportPDF(logs) {
         yPos += 4;
     }
     
-    // Summary Statistics Section
+    
     doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
     doc.text('Summary Statistics', leftMargin, yPos);
@@ -558,7 +558,7 @@ async function exportPDF(logs) {
     doc.text(`Unique Problems: ${stats.problems.size}`, leftMargin, yPos);
     yPos += 10;
     
-    // Alerts Section
+    
     doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
     doc.text('Behavioral Alerts', leftMargin, yPos);
@@ -566,13 +566,13 @@ async function exportPDF(logs) {
     
     doc.setFontSize(10);
     alerts.forEach(alert => {
-        // Check if we need a new page
+        
         if (yPos > pageHeight - 20) {
             doc.addPage();
             yPos = 20;
         }
         
-        // Color code alerts
+        
         if (alert.type === 'danger') {
             doc.setTextColor(220, 20, 20);
             doc.text(`[!] ${alert.message}`, leftMargin, yPos);
@@ -583,12 +583,12 @@ async function exportPDF(logs) {
             doc.setTextColor(20, 180, 20);
             doc.text(`[✓] ${alert.message}`, leftMargin, yPos);
         }
-        doc.setTextColor(0, 0, 0); // Reset to black
+        doc.setTextColor(0, 0, 0); 
         yPos += 7;
     });
     yPos += 5;
     
-    // Event Log Section
+    
     doc.addPage();
     yPos = 20;
     
@@ -600,20 +600,20 @@ async function exportPDF(logs) {
     doc.setFontSize(8);
     doc.setFont(undefined, 'normal');
     
-    // Table header
+    
     doc.setFont(undefined, 'bold');
     doc.text('Event', leftMargin, yPos);
     doc.text('Problem', leftMargin + 45, yPos);
     doc.text('Timestamp', leftMargin + 110, yPos);
     yPos += 5;
     
-    // Draw line under header
+   
     doc.line(leftMargin, yPos, 195, yPos);
     yPos += 5;
     
     doc.setFont(undefined, 'normal');
     
-    // Event rows
+    
     logs.forEach((log, index) => {
         // Check if we need a new page
         if (yPos > pageHeight - 15) {
@@ -631,7 +631,7 @@ async function exportPDF(logs) {
             doc.setFont(undefined, 'normal');
         }
         
-        // Truncate long text
+        
         const eventText = (log.e || "").substring(0, 20);
         const problemText = (log.problem || "N/A").substring(0, 30);
         const timeText = new Date(log.timestamp).toLocaleTimeString();
@@ -665,25 +665,25 @@ async function exportPDF(logs) {
         );
     }
     
-    // Save the PDF
+    
     const timestamp = new Date().toISOString().split('T')[0];
     doc.save(`coding-assessment-logs-${timestamp}.pdf`);
     
     alert(`Successfully exported ${logs.length} logs as PDF!`);
 }
 
-// Helper function to escape CSV special characters
+
 function escapeCSV(str) {
     if (typeof str !== 'string') return str;
     
-    // If string contains comma, quotes, or newlines, wrap in quotes
+   
     if (str.includes(',') || str.includes('"') || str.includes('\n')) {
         return '"' + str.replace(/"/g, '""') + '"';
     }
     return str;
 }
 
-// Helper function to trigger download
+
 function downloadFile(blob, filename) {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
