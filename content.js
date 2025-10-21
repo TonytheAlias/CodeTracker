@@ -133,11 +133,11 @@ document.addEventListener("paste", () => {
 document.addEventListener("visibilitychange", () => {
     try {
         if (document.hidden) {
-            bufferEvent("tab_switch");
-            // Flush immediately on tab switch (important event)
+            bufferEvent("Tab Switch");
+           
             flushEventBuffer();
         } else {
-            bufferEvent("tab_return");
+            bufferEvent("Tab Return");
         }
     } catch (error) {
         logError('visibilitychange handler', error);

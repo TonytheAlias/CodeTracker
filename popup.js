@@ -182,6 +182,7 @@ function renderDashboard(logs) {
     document.getElementById('chartContainer').classList.add('visible');
 }
 
+
 // Show Dashboard
 document.getElementById("showDashboard").addEventListener("click", async () => {
     if (dashboardVisible) {
