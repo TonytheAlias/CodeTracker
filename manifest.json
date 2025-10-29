@@ -24,9 +24,9 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-    "16": "./Images/Logo3.png",
-    "48": "./Images/Logo2.png",
-    "128": "./Images/Logo1.png"
+    "16": "./Images/CT-LogoV2-2.png",
+    "48": "./Images/CT-LogoV2-2.png",
+    "128": "./Images/CT-LogoV2-1.png"
       
     }
   },
